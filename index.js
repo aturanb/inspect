@@ -13,9 +13,24 @@ const winston = require('winston'),
     queue = new (require('./lib/queue'))(),
     InspectURL = require('./lib/inspect_url'),
     botController = new (require('./lib/bot_controller'))(),
-    CONFIG = require(args.config),
-    postgres = new (require('./lib/postgres'))(CONFIG.database_url, CONFIG.enable_bulk_inserts),
-    gameData = new (require('./lib/game_data'))(CONFIG.game_files_update_interval, CONFIG.enable_game_file_updates),
+    CONFIG = require(args.config);
+
+// Conditionally create postgres instance only if database_url is provided
+let postgres;
+if (CONFIG.database_url) {
+    postgres = new (require('./lib/postgres'))(CONFIG.database_url, CONFIG.enable_bulk_inserts);
+} else {
+    // Create stub postgres object when database is disabled
+    postgres = {
+        connect: () => {},
+        getItemData: async () => [],
+        updateItemPrice: () => {},
+        insertItemData: async () => {},
+        getItemRank: async () => ({})
+    };
+}
+
+const gameData = new (require('./lib/game_data'))(CONFIG.game_files_update_interval, CONFIG.enable_game_file_updates),
     errors = require('./errors'),
     Job = require('./lib/job');
 
